@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TSR Enemies 5.0</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    body { margin: 0; padding: 0; background: #0d0f14; }
+    * { box-sizing: border-box; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState } = React;
+
+
+
+const enemies = {
+  "Tier 0": {
+    label: "Tier 0 — The Rabble",
+    color: "#8B7355",
+    accent: "#C4A35A",
+    mooks: [
+      {
+        name: "Peasant",
+        level: "Tier 0 (lv -1)",
+        hp: 20, stamina: 15, mana: 0,
+        str: "d8", dex: "d8", min: "d4", wil: "d4", vig: "d4",
+        parry: "6", armor: "0", ward: null,
+        damage: "1d8+1d6/1d4 (+2 Power Attack)",
+        accuracy: "1d8 (+2 Take Aim)",
+        speed: "6",
+        loot: "Equipped Weapon",
+        abilities: [
+          { name: "Easily Influenced", desc: "Gains +2 Accuracy, Damage, and Parry per Agitator nearby (max +6)." },
+          { name: "Untrained Attacks", desc: "Always uses Power Attack and Take Aim for +2 Primary Damage and +2 Accuracy (8 stamina)." },
+        ],
+        equipment: "Pitchfork (1d6), Rusty Machete (1d4), Mallet (1d6, Cleave), Torch (1d4 + 1d4 fire, Searing 1), or Rock (1d4 thrown, 4 spaces).",
+        tactics: "Uncoordinated mob. Swarms enemies with Untrained Attacks. Flees when losing ground.",
+      },
+      {
+        name: "Trainee",
+        level: "Tier 0 (lv -1)",
+        hp: 25, stamina: 25, mana: 0,
+        str: "d8", dex: "d8", min: "d4", wil: "d4", vig: "d4",
+        parry: "6 (8 Dodging)", armor: "0", ward: null,
+        damage: "1d8+1d4/1d6 (+2 Power Attack)",
+        accuracy: "1d8 (+2 Take Aim) / Shortbow 10 spaces",
+        speed: "6",
+        loot: "Equipped Weapon",
+        abilities: [
+          { name: "Flickering Flame", desc: "Always uses Power Attack and Take Aim for +2 Damage and +2 Accuracy (8 stamina)." },
+        ],
+        equipment: "Training Caestus (1d4, Dual Strike), Training Spear (1d6), or Training Bow (1d6 Shortbow, 10 spaces).",
+        tactics: "Follows master's style. Bow users stay back; Spear users advance; Caestus users flank and grab. Always Dodges.",
+      },
+      {
+        name: "Thug",
+        level: "Tier 0 (lv -1)",
+        hp: 25, stamina: 25, mana: 0,
+        str: "d12", dex: "d4", min: "d4", wil: "d4", vig: "d4",
+        parry: "4 (6 Dodging)", armor: "0", ward: null,
+        damage: "1d12+1d4/1d6 (+2 Primary Damage, +1 Precise Strikes)",
+        accuracy: "1d12 (+1 Precise Strikes)",
+        speed: "6",
+        loot: "Equipped Weapon",
+        abilities: [
+          { name: "Brute", desc: "Uses Strength to determine Accuracy with melee weapons." },
+          { name: "Vicious Strike", desc: "2 Actions, rolls Strength Dice twice on damage." },
+          { name: "Cleave", desc: "2 Actions, AoE attack. Preferred over Vicious Strike on crowds." },
+          { name: "Bodyguard", desc: "Guards an ally within 5ft for 2 stamina." },
+        ],
+        equipment: "Brass Knuckles (1d4 Caestus), Nasty Club (1d6 Heavy Club).",
+        tactics: "Looks for clumped targets to Cleave. Uses Bodyguard to protect weaker allies. Always Dodges.",
+      },
+      {
+        name: "Mugger",
+        level: "Tier 0 (lv -1)",
+        hp: 20, stamina: 30, mana: 0,
+        str: "d6", dex: "d10", min: "d4", wil: "d4", vig: "d4",
+        parry: "7 (9 Dodging)", armor: "0", ward: null,
+        damage: "1d6+1d4+2",
+        accuracy: "1d10 (+2 Take Aim)",
+        critical: "+2",
+        speed: "6",
+        loot: "Equipped Weapon",
+        abilities: [
+          { name: "Reckless Tossout", desc: "4 stamina, 2 Actions: deals Strength Dice damage at half throw range without hitting Parry." },
+          { name: "Quick Blades", desc: "Ranged Reckless Tossout, or flanks to melee with +2 Accuracy & Damage (Take Aim + Power Attack, 8 stamina)." },
+          { name: "Lethality", desc: "Applies 2 stacks of Bleed on every successful damaging hit; Aggravate on crit." },
+        ],
+        equipment: "Shiv (1d4 Knife, range 6, Reckless Tossout).",
+        tactics: "Targets unarmored, out-of-position units. Reckless Tossout at range, flanks to melee when opportune. Always Dodges.",
+      },
+      {
+        name: "Apprentice",
+        level: "Tier 0 (lv -1)",
+        hp: 20, stamina: 10, mana: 20,
+        str: "d4", dex: "d4", min: "d10", wil: "d8", vig: "d4",
+        parry: "4", armor: "0", ward: "2",
+        damage: "1d10+1d4 (Fire Spark)",
+        accuracy: "1d10",
+        spellRange: "8",
+        speed: "6",
+        loot: "1 Wand",
+        abilities: [
+          { name: "Fire Spark", desc: "4 mana, 2 Actions: 1d4 fire + Mind, 10ft radius cloak. Applies 1 Searing on HP damage." },
+          { name: "Thaumic Fortification", desc: "Conjures 10 damage shields for an ally within spell range." },
+          { name: "Dark Erosion", desc: "Willpower vs Willpower save: applies Rend and 2 stacks of Poison on fail." },
+          { name: "Ghastly Trickery", desc: "Willpower vs Willpower save: applies Root on fail." },
+        ],
+        equipment: "Wand.",
+        tactics: "Stays away from melee. Casts 4 mana, 2 Action spells situationally.",
+      },
+    ],
+    elites: [
+      {
+        name: "Bandit Enforcer",
+        level: "Tier 0 (lv 2)",
+        hp: 35, stamina: 30, mana: 0,
+        str: "d10", dex: "d12", min: "d4", wil: "d4", vig: "d4",
+        parry: "8 (10 Dodging)", armor: "+4", ward: null,
+        damage: "1d10+1d8 (+2 Precision, +1d10 Vicious Swing)",
+        accuracy: "1d12 (+2 Precision, +2 Take Aim)",
+        speed: "6",
+        loot: "Broadsword, Hauberk Armor",
+        abilities: [
+          { name: "Crude Swordsmanship", desc: "Cleave for crowds or Vicious Strike on single targets (both 2 Actions)." },
+          { name: "Attack of Opportunity", desc: "May perform Attacks of Opportunity." },
+          { name: "Precision Strikes", desc: "4 stamina: +2 Damage and Accuracy on attack phase." },
+        ],
+        equipment: "Broadsword (1d8 Versatile), Gambeson armor.",
+        tactics: "Advances on clumped units to Cleave. Hunts isolated units with Vicious Strike. Ends turn next to vulnerable units for AoO.",
+      },
+      {
+        name: "Deserter",
+        level: "Tier 0 (lv 2)",
+        hp: 35, stamina: 30, mana: 0,
+        str: "d6", dex: "d12+2", min: "d4", wil: "d4", vig: "d4",
+        parry: "10 (12 Dodging)", armor: "+1", ward: null,
+        damage: "2d4 (+2 Precision, +2 Hunter's Discharge = +2 total)",
+        accuracy: "1d12+6 for 8 stamina",
+        speed: "6",
+        loot: "Autogun, Shortsword, Gambeson Armor",
+        abilities: [
+          { name: "Precision Strikes", desc: "4 stamina: +2 Damage and Accuracy." },
+          { name: "Hunter's Discharge", desc: "4 stamina: +2 Damage and Accuracy." },
+        ],
+        equipment: "Autogun (2d4, range 8, 12 ammo, 4 shots/2 Actions), Shortsword (1d6), 2× Shrapnel Grenade (4d6 Physical, 10ft, Bleed 4, range 6).",
+        tactics: "Hides in backlines using allies as cover for long-range killshots. Draws Shortsword if cornered.",
+      },
+      {
+        name: "Hunter",
+        level: "Tier 0 (lv 2)",
+        hp: 25, stamina: 40, mana: 0,
+        str: "d6", dex: "d12+2", min: "d4", wil: "d4", vig: "d4",
+        parry: "8 (10 Dodging)", armor: "0", ward: null,
+        damage: "2d6 (+2 Precision Strikes)",
+        accuracy: "1d12+6 for 8 stamina",
+        critical: "+2",
+        speed: "6",
+        loot: "Equipped Gear",
+        abilities: [
+          { name: "Hunter's Mark", desc: "1 Action: +2 Accuracy on next ranged attack against target." },
+          { name: "Attack Enhancers", desc: "Precision Strikes + Take Aim: +4 Accuracy, +2 Damage (8 stamina)." },
+          { name: "Lethality", desc: "2 stacks of Bleed per damaging hit; Aggravate on crit." },
+          { name: "Quickdraw", desc: "Draw actions become Free Actions for 4 stamina." },
+        ],
+        equipment: "Shortsword (1d4 Dagger), Light Crossbow (2d6, range 10).",
+        tactics: "Targets unarmored, out-of-position units with crossbow. Melee with dual daggers if pressed. Always Dodges.",
+      },
+      {
+        name: "Shaman",
+        level: "Tier 0 (lv 2)",
+        hp: 30, stamina: 10, mana: 25,
+        str: "d4", dex: "d4", min: "d12", wil: "d10", vig: "d4",
+        parry: "6 (7 Staff, 9 Dodging)", armor: "0", ward: "+3",
+        damage: "1d12+1d4 / 1d4 (spells)",
+        accuracy: "1d12",
+        spellRange: "9",
+        speed: "6",
+        loot: "1 Staff",
+        abilities: [
+          { name: "Mana Abjuration", desc: "Half Mind = Parry. Can use Mana to Dodge/Block." },
+          { name: "Fire Flicker", desc: "4 mana, 2 Actions: 1d6 fire + Mind, 10ft radius. Applies 1 Searing on HP damage." },
+          { name: "Summon Fragment Phantom", desc: "Phantom: 10 HP, 6 Parry, 30ft move, 1d6+5 damage. On HP hit: 1 Bleed; if already bleeding: 1 Poison." },
+          { name: "Thaumic Fortification", desc: "10 damage shields to an ally within spell range." },
+          { name: "Shadowy Erosion", desc: "WIL vs WIL: Rend + 4 stacks Poison on fail." },
+          { name: "Ghastly Trickery", desc: "WIL vs WIL: Root on fail." },
+        ],
+        equipment: "Staff.",
+        tactics: "Versatile. Adapts spell use to the situation. Always Dodges.",
+      },
+    ],
+    bosses: [
+      {
+        name: "Bandit Boss",
+        level: "Tier 0 (lv 4)",
+        hp: 55, stamina: 40, mana: 0,
+        str: "d12", dex: "d12+1", min: "d4", wil: "d4", vig: "d8",
+        parry: "8 (10 Dodging)", armor: "+8", ward: null,
+        damage: "1d12+1d8 (+2 Precision, +1d12 Vicious Swing, +1 Axe)",
+        accuracy: "1d12+1 (+2 Precision, +2 Take Aim)",
+        speed: "6",
+        loot: "Highland Axe, Scale Armor",
+        abilities: [
+          { name: "Drunken Bravado", desc: "Starts battle with 1 Poise. Cannot regain it until a Short Rest after losing it." },
+          { name: "Crude Fighting", desc: "Cleave for crowds or Vicious Strike on singles (both 2 Actions)." },
+          { name: "Attack of Opportunity", desc: "May perform Attacks of Opportunity." },
+          { name: "Precision Strikes", desc: "4 stamina: +2 Damage and Accuracy." },
+        ],
+        equipment: "Highland Axe (1d8 Reach +1), Scale Armor.",
+        tactics: "Leads with Poise. Uses Cleave on groups or Vicious Strike on priority targets. Aggressive frontline fighter.",
+      },
+    ],
+  },
+  "Tier 1": {
+    label: "Tier 1 — The Trained",
+    color: "#4A6741",
+    accent: "#7AB648",
+    mooks: [
+      {
+        name: "Soldier",
+        level: "Tier 1 (lv 1)",
+        hp: 40, stamina: 25, mana: 0,
+        str: "d8", dex: "d8", min: "d4", wil: "d4", vig: "d8",
+        parry: "7 (9 Dodging, 10 Guard Stance)", armor: "+6 (+8 Guard)", ward: null,
+        damage: "1d8+1d6 (+2 Power Attack)",
+        accuracy: "1d8 (+2 Take Aim)",
+        speed: "6",
+        loot: "Sword & Shield, Hauberk Armor",
+        abilities: [
+          { name: "Moderately Armored", desc: "Starts with 10/15 max damage shields." },
+          { name: "Bodyguard", desc: "Free action, 2 stamina: Guards an ally within 5ft." },
+          { name: "Phalanx", desc: "2 stamina (free action): Creates 3 tiles of Partial Cover in front. Projectiles targeting allies behind are redirected to the Soldier." },
+          { name: "Barbed Counter", desc: "Procs a 5ft cloak (Str d8 damage) when shields are destroyed or on Counter AoO." },
+          { name: "Drilled Technique", desc: "Counters with +2 Accuracy and +2 Primary Damage (Take Aim + Power Attack, 8 stamina)." },
+        ],
+        equipment: "Sword & Shield (1d6 Shortsword / Buckler, +1 Parry), Hauberk.",
+        tactics: "Defensive. Guards weak allies. Uses Guard Stance and Phalanx. Always Dodges. Counters with Barbed Counter and Drilled Technique.",
+      },
+      {
+        name: "Mercenary",
+        level: "Tier 1 (lv 1)",
+        hp: 25, stamina: 25, mana: 0,
+        str: "d8", dex: "d12", min: "d4", wil: "d4", vig: "d4",
+        parry: "8 (10 Dodging)", armor: "0", ward: null,
+        damage: "1d8+1d8/1d4 (+2 Precision, +1d8 Determined Strike)",
+        accuracy: "1d12 (+2 Precision, +2 Take Aim)",
+        critical: "+2 with Knife",
+        speed: "6",
+        loot: "Trusty Blade, Throwing Knives",
+        abilities: [
+          { name: "Cleave", desc: "2 Actions: Strike in a targeted AoE." },
+          { name: "Determined Strike", desc: "Spend 1 Action: Add extra Primary Weapon die to next melee attack." },
+          { name: "Precise Blow", desc: "+4 Accuracy, +2 Primary Damage (Precision + Take Aim, 8 stamina)." },
+        ],
+        equipment: "Trusty Blade (1d8 Broadsword, 2h Cleave), Throwing Knives (1d4 Knife, range 6, Reckless Tossout).",
+        tactics: "Charges in to Cleave clumps. Uses Determined Strike + Precise Blow on single unarmored targets. Throws knives from range. Always Dodges.",
+      },
+      {
+        name: "Militia",
+        level: "Tier 1 (lv 1)",
+        hp: 25, stamina: 25, mana: 0,
+        str: "d8", dex: "d12", min: "d4", wil: "d4", vig: "d4",
+        parry: "8 (10 Dodging)", armor: "0", ward: null,
+        damage: "2d10 (+2 Hunter's Discharge)",
+        accuracy: "1d12 (+2 Take Aim, +2 Hunter's Discharge)",
+        speed: "6",
+        loot: "Musket, Bayonet",
+        abilities: [
+          { name: "Firing Volley", desc: "+4 Accuracy, +2 Primary Damage (Hunter's Discharge + Take Aim, 8 stamina)." },
+          { name: "Overwatch", desc: "1 Action: Enables Ranged Attacks of Opportunity." },
+        ],
+        equipment: "Musket (2d10, range 10), Bayonet (1d6 Spear, +1 Reach).",
+        tactics: "Holds position. Shoots with Firing Volley. Enters Overwatch. Reloads as needed. Always Dodges.",
+      },
+      {
+        name: "Brawler",
+        level: "Tier 1 (lv 1)",
+        hp: 25, stamina: 25, mana: 0,
+        str: "d8", dex: "d12", min: "d4", wil: "d4", vig: "d4",
+        parry: "8 (10 Dodging)", armor: "0", ward: null,
+        damage: "1d8+1d6/1d4 (+2 Precision Strikes)",
+        accuracy: "1d12 (+2 Precision, +2 Quick Jabs)",
+        speed: "6",
+        loot: "Caestus, Throwing Knives",
+        abilities: [
+          { name: "Fist Fighter", desc: "Fists become Finesse weapons (1d6). Dual Strike: 2 Attacks with same MAP (2 Actions)." },
+          { name: "Grab Action", desc: "Single attack: Str vs Vig check to grapple (no damage needed)." },
+          { name: "Quick Blows", desc: "+4 Accuracy, +2 Primary Damage (Quick Jabs + Precision Strikes, 8 stamina)." },
+        ],
+        equipment: "Caestus (1d6 Fists), Throwing Knives (1d4, range 6).",
+        tactics: "Hits out-of-position units with Quick Blows. Flanks and Grabs Warriors to remove them from Guard. Always Dodges.",
+      },
+      {
+        name: "Lancer",
+        level: "Tier 1 (lv 1)",
+        hp: 30, stamina: 25, mana: 0,
+        str: "d8", dex: "d10", min: "d4", wil: "d4", vig: "d6",
+        parry: "7 (9 Dodging)", armor: "5", ward: null,
+        damage: "1d8+1d6 (+2 Precision, +1 Interruptor)",
+        accuracy: "1d10 (+2 Precision, +2 Take Aim, +1 Interruptor)",
+        speed: "6",
+        loot: "Spear, Hauberk",
+        abilities: [
+          { name: "Attack of Opportunity", desc: "May perform Attacks of Opportunity." },
+          { name: "Cleave", desc: "2 Actions: Targeted AoE." },
+          { name: "Vicious Strike", desc: "2 Actions: Extra Str die of damage." },
+          { name: "Interruptor", desc: "+1 Accuracy and Damage on Attacks of Opportunity." },
+          { name: "Precise Blow", desc: "+4 Accuracy, +2 Primary Damage (8 stamina)." },
+        ],
+        equipment: "Spear (1d6 + Str), Hauberk (+4 Armor).",
+        tactics: "Holds strategic positions. Denies area with reach and AoO. Uses Cleave if multiple targets cluster.",
+      },
+      {
+        name: "Shotgunner",
+        level: "Tier 1 (lv 1)",
+        hp: 25, stamina: 25, mana: 0,
+        str: "d10", dex: "d10", min: "d4", wil: "d4", vig: "d4",
+        parry: "7 (9 Dodging)", armor: "0", ward: null,
+        damage: "1d10+1d4 (+2 Precision Strikes)",
+        accuracy: "1d10 (+2 Precision, +2 Take Aim)",
+        speed: "6",
+        loot: "Boomstick, Bayonet",
+        abilities: [
+          { name: "Bayonet Thrust", desc: "2 Actions, Vicious Strike + Precision Strikes: +2 Accuracy & Primary Damage (8 stamina)." },
+          { name: "Lethality", desc: "2 stacks of Bleed per hit; Aggravate on crit." },
+        ],
+        equipment: "Boomstick (2d6, range 6), Bayonet.",
+        tactics: "Targets unarmored units at close range with Boomstick. Falls back on Bayonet Thrust if cornered. Always Dodges.",
+      },
+      {
+        name: "Mage",
+        level: "Tier 1 (lv 1)",
+        hp: 20, stamina: 10, mana: 30,
+        str: "d4", dex: "d4", min: "d12", wil: "d8", vig: "d4",
+        parry: "6 (7 Staff, 9 Dodging)", armor: "0", ward: "+2",
+        damage: "1d12+1d4/1d4 (spells)",
+        accuracy: "1d12",
+        spellRange: "8",
+        speed: "6",
+        loot: "1 Staff",
+        abilities: [
+          { name: "Mana Abjuration", desc: "Half Mind = Parry. Can use Mana to Dodge/Block." },
+          { name: "Fire Spark", desc: "4 mana, 2 Actions: 1d4 fire + Mind, 10ft radius. Applies 1 Searing." },
+          { name: "Summon Fragment Phantom", desc: "10 HP, 6 Parry, 30ft move, 1d6+5 damage. Bleed on HP hit; Poison if already bleeding." },
+          { name: "Thaumic Fortification", desc: "10 damage shields to ally in range." },
+          { name: "Dark Erosion", desc: "WIL vs WIL: Rend + 2 Poison stacks on fail." },
+          { name: "Ghastly Trickery", desc: "WIL vs WIL: Root on fail." },
+        ],
+        equipment: "Staff.",
+        tactics: "Versatile caster. Adapts to situation. Always Dodges.",
+      },
+      {
+        name: "Priestess",
+        level: "Tier 1 (lv 1)",
+        hp: 20, stamina: 10, mana: 30,
+        str: "d4", dex: "d4", min: "d8", wil: "d12", vig: "d4",
+        parry: "6 (7 Staff, 9 Dodging)", armor: "0", ward: "+4",
+        damage: "1d8+1d4 (spells)",
+        accuracy: "1d8 (+2 Homing Spell)",
+        spellRange: "8",
+        speed: "6",
+        loot: "1 Staff",
+        abilities: [
+          { name: "Mana Abjuration", desc: "Half Mind = Parry. Mana can be used to Dodge/Block." },
+          { name: "Angelic Wingbeat", desc: "4 mana, 2 Actions: 1d4 holy + Mind, 10ft radius. Damage converts to healing for willing allies." },
+          { name: "Divine Fortification", desc: "10 damage shields or WIL die of healing to ally in range." },
+          { name: "Aura", desc: "4 mana: 2d6 + Mind Holy damage, Homing (+2 Accuracy). Applies 2 Searing on HP damage." },
+        ],
+        equipment: "Staff.",
+        tactics: "Support caster. Heals and shields allies. Uses Aura on priority targets. Always Dodges.",
+      },
+    ],
+    elites: [
+      {
+        name: "Barbarian",
+        level: "Tier 1 (lv 3)",
+        hp: 45, stamina: 35, mana: 0,
+        str: "d12+2", dex: "d4", min: "d4", wil: "d4", vig: "d8",
+        parry: "4", armor: "+2 (+4 Blocking, halved dmg from Rage)", ward: null,
+        damage: "1d12+2+1d10 (+3 Power, +2 Precision / 1d12+2 Vicious Strike)",
+        accuracy: "1d12+2 (+2 Precision Strikes)",
+        speed: "6",
+        loot: "Maul, Caestus",
+        abilities: [
+          { name: "Attack of Opportunity", desc: "May perform Attacks of Opportunity." },
+          { name: "Brute", desc: "Uses Strength for Accuracy on melee attacks." },
+          { name: "Titan's Grip", desc: "Wields 2h weapons in 1h." },
+          { name: "Cleave", desc: "2 Actions: Targeted AoE." },
+          { name: "Vicious Strike", desc: "2 Actions: Rolls Strength dice twice on damage." },
+          { name: "Armor Crusher", desc: "12 stamina: +5 Primary Damage, +2 Accuracy (Precision + Improved Power Attack)." },
+          { name: "Rage", desc: "All incoming hits become Glancing Blows. +1 damage per 10 missing HP (max +3). +2 stamina cost to all actions; 4 stam/round upkeep." },
+        ],
+        equipment: "Maul (1d10), Caestus (1d4).",
+        tactics: "Rushes Warriors and Guards. Vicious Strike to destroy them or Grabs to drag them away. Cleaves multiple targets. Blocks always.",
+      },
+      {
+        name: "Hoplite",
+        level: "Tier 1 (lv 3)",
+        hp: 45, stamina: 35, mana: 0,
+        str: "d10", dex: "d12", min: "d4", wil: "d4", vig: "d8",
+        parry: "10 (11 Guard Stance)", armor: "+8 (+13 with Block + Guard)", ward: null,
+        damage: "1d10+1d4 (+2 Precision Strikes)",
+        accuracy: "1d12 (+2 Precision, +2 Take Aim)",
+        speed: "6",
+        loot: "Harpoon, Heater Shield, Scale Armor",
+        abilities: [
+          { name: "Attack of Opportunity", desc: "May perform Attacks of Opportunity." },
+          { name: "Armored", desc: "Starts with 15/15 damage shields. Resistances apply over shields." },
+          { name: "Anchoring Howl", desc: "Free action, 2 stamina (1/round upkeep): 10ft cloak — instantly Guards any ally inside." },
+          { name: "Barbed Counter", desc: "Procs 5ft cloak (Str d10) when shields are destroyed or on Counter." },
+          { name: "Spiked Armor", desc: "5ft physical cloak on finishing movement or when attacked." },
+          { name: "Drilled Technique", desc: "+4 Accuracy, +2 Primary Damage on counters (8 stamina). Recovers 10 damage shields." },
+        ],
+        equipment: "Harpoon (1d4), Heater Shield (+2 Parry), Scale Armor.",
+        tactics: "Defends weak allies. Guard Stance + Anchoring Howl. Always Blocks. Counters with Drilled Technique.",
+      },
+      {
+        name: "Stalker",
+        level: "Tier 1 (lv 3)",
+        hp: 30, stamina: 40, mana: 0,
+        str: "d8", dex: "d12+2", min: "d4", wil: "d4", vig: "d4",
+        parry: "9 (11 Dodging)", armor: "+1", ward: null,
+        damage: "1d8+1d4 (+2 Precision) / 1d8+1d6 Bow (+2 Precision)",
+        accuracy: "1d12+6 for 8 stamina",
+        critical: "+2",
+        speed: "6",
+        loot: "2× Dagger, Shortbow, Gambeson",
+        abilities: [
+          { name: "Dual Strike / Double Shot", desc: "2 Actions: 2 Attacks with same MAP." },
+          { name: "Hunter's Mark", desc: "1 Action: +2 Accuracy on next ranged attack against target." },
+          { name: "Volley of Arrows", desc: "2 Actions: Targeted AoE, 15ft radius." },
+          { name: "Attack Enhancers", desc: "Precision Strikes + Take Aim: +4 Accuracy, +2 Damage (8 stamina)." },
+          { name: "Lethality", desc: "2 stacks of Bleed per hit; Aggravate on crit." },
+          { name: "Quickdraw", desc: "Draw as Free Action for 4 stamina." },
+        ],
+        equipment: "Dagger (1d4), Dagger (1d4), Shortbow (d8+d6, range 10), Gambeson.",
+        tactics: "Targets unarmored out-of-position units. Double Shot or Volley at range. Dual Strike in melee. Always Dodges.",
+      },
+      {
+        name: "Spellblade",
+        level: "Tier 1 (lv 3)",
+        hp: 40, stamina: 10, mana: 30,
+        str: "d6", dex: "d4", min: "d12+2", wil: "d4", vig: "d8",
+        parry: "9 (11 Dodging)", armor: "+3", ward: null,
+        damage: "1d12+2+1d6/1d8 (+2 Power Attack)",
+        accuracy: "1d12+2 (+2 Take Aim / +2 Homing Spell)",
+        spellRange: "8",
+        speed: "6",
+        loot: "Brigandine",
+        abilities: [
+          { name: "Mana Abjuration", desc: "Half Mind = Parry. Mana can be used to Dodge/Block." },
+          { name: "Touch Magic", desc: "2 Actions: Infuse a spell into a melee attack." },
+          { name: "Cleave", desc: "2 Actions: AoE around user." },
+          { name: "Lightning Spear", desc: "1d6 lightning + Mind, can crit, +2 crit range." },
+          { name: "Thaumic Armaments", desc: "Draw action: Creates unstable Broadsword (magic damage) at battle start." },
+          { name: "Thaumic Enhancement", desc: "Buffs a weapon with rune enchantment until end of combat or unconscious." },
+        ],
+        equipment: "Thaumic Broadsword (magic damage), Brigandine.",
+        tactics: "Versatile melee-mage. Uses Touch Magic to combo spells with attacks. Cleaves groups. Always Dodges.",
+      },
+    ],
+    bosses: [
+      {
+        name: "Noble",
+        level: "Tier 1 (lv 5)",
+        hp: 50, stamina: 45, mana: 0,
+        str: "d12", dex: "d12+2", min: "d4", wil: "d4", vig: "d6",
+        parry: "9 (11 Dodging)", armor: "+7 (+9 Guard Stance)", ward: null,
+        damage: "1d12+1d6/1d4 (+2 Precision, +2 Practiced Fencing, +2 AP Revolver)",
+        accuracy: "1d12+6",
+        critical: "+2 Scimitar",
+        speed: "6",
+        loot: "Scimitar, Revolver, Scale Armor",
+        abilities: [
+          { name: "Ancient Bloodline Amulet", desc: "Starts with 2 Poise. Cannot regain until Short Rest after losing it." },
+          { name: "Attack of Opportunity", desc: "May perform Attacks of Opportunity." },
+          { name: "Enduring Sentinel", desc: "Gains 5 damage shields at turn start. Starts combat with 10 damage shields." },
+          { name: "Dual Strike with Point Blank Shot", desc: "2 Actions: 2 attacks with same MAP. No AoO from ranged weapon in melee if paired with melee weapon." },
+          { name: "Shattering Slam", desc: "When damage shields are destroyed by melee, procs 5ft physical cloak (Str die)." },
+          { name: "Rallying Cry", desc: "1 Action: Commands ally within 20ft to immediately attack. On HP damage, ally gains 10 damage shields." },
+          { name: "Precision Strikes", desc: "4 stamina: +2 Damage and Accuracy." },
+          { name: "Practiced Fencing", desc: "4 stamina: +2 Accuracy, +2 Primary Damage on next attack phase." },
+          { name: "Lethality", desc: "2 stacks of Bleed per hit; Aggravate on crit." },
+        ],
+        equipment: "Scimitar (1d6), Revolver (2d6 +2 AP, range 10, 6 ammo), Scale Armor.",
+        tactics: "Aggressive frontliner. Uses Poise and shields to sustain. Rallies allies. Dual Strike + Point Blank Shot combo.",
+      },
+      {
+        name: "Aristocrat",
+        level: "Tier 1 (lv 5)",
+        hp: 35, stamina: 10, mana: 40,
+        str: "d4", dex: "d4", min: "d12+2", wil: "d12+1", vig: "d4",
+        parry: "8 (10 Dodging)", armor: "0", ward: "+4",
+        damage: "1d12+2+1d6 (complex spells)",
+        accuracy: "1d12+2 (+2 Homing Spell)",
+        spellRange: "13",
+        speed: "6",
+        loot: "Staff",
+        abilities: [
+          { name: "Mana Abjuration", desc: "Half Mind = Parry. Mana can be used to Dodge/Block." },
+          { name: "Fire Flicker (Complex)", desc: "4 mana, 2 Actions: 1d6 fire + Mind, 10ft radius. Applies 1 Searing." },
+          { name: "Lightning Spear (Complex)", desc: "1d6 lightning + Mind. Can crit, +2 crit range." },
+          { name: "Fragment Phantom Swarm (Complex)", desc: "Summons 3 Phantoms (10 HP, 6 Parry, 30ft move, 1d6+5 dmg). Bleed on HP hit; Poison if bleeding." },
+          { name: "Thaumic Enhancement (Simple)", desc: "1 Action, 2 mana: Rune enchantment on weapon until end of combat." },
+          { name: "Shadowy Erosion (Simple)", desc: "WIL vs WIL: Rend + 4 Poison stacks on fail." },
+          { name: "Ghastly Trickery (Simple)", desc: "WIL vs WIL: Root on fail." },
+          { name: "Relocation Gate (Simple)", desc: "Teleports self or adjacent ally 10 spaces." },
+        ],
+        equipment: "Family Crest Staff.",
+        tactics: "Powerful flexible caster. Complex spells (2 mana, 1 Action) for burst. Simple spells for control/support. Long range.",
+      },
+      {
+        name: "Ogre",
+        level: "Tier 1 (lv 5)",
+        hp: 60, stamina: 45, mana: 0,
+        str: "d12+4", dex: "d4", min: "d4", wil: "d4", vig: "d12+1",
+        parry: "4", armor: "+12 (+14 Blocking)", ward: null,
+        damage: "2d12+10+1d12+4 (with Vicious Strike)",
+        accuracy: "1d12+4 (+2 Precision Strikes)",
+        speed: "6",
+        loot: "Labrys, Caestus",
+        abilities: [
+          { name: "Unyielding Bulk", desc: "Starts with 2 Poise. Cannot regain until Short Rest after losing it." },
+          { name: "Gigantic", desc: "2×2 size. +5ft melee reach. +1 Str and Vigor." },
+          { name: "Attack of Opportunity", desc: "May perform Attacks of Opportunity." },
+          { name: "Brute", desc: "Uses Strength for melee Accuracy." },
+          { name: "Titan's Grip", desc: "Wields 2h weapons in 1h." },
+          { name: "Cleave", desc: "2 Actions: Targeted AoE." },
+          { name: "Vicious Strike", desc: "2 Actions: Rolls Strength dice twice." },
+          { name: "Armor Crusher", desc: "8 stamina: +5 Primary Damage, +2 Accuracy." },
+        ],
+        equipment: "Labrys (1d12), Caestus (1d4), Half Plate.",
+        tactics: "Rushes Warriors and Guards. Grabs and drags. Cleaves clustered targets. Massive tank with 2 Poise and heavy armor.",
+      },
+    ],
+  },
+  "Tier 2": {
+    label: "Tier 2 — The Veterans",
+    color: "#2A4A7A",
+    accent: "#4A90D9",
+    mooks: [
+      {
+        name: "Corporal",
+        level: "Tier 2 (lv 3)",
+        hp: 45, stamina: 35, mana: 0,
+        str: "d10", dex: "d12", min: "d4", wil: "d4", vig: "d8",
+        parry: "10 (11 Guard Stance)", armor: "+8 (+13 Block + Guard)", ward: null,
+        damage: "1d10+1d8 (+2 Precision Strikes)",
+        accuracy: "1d12 (+2 Precision, +2 Take Aim)",
+        speed: "6",
+        loot: "Broadsword, Heater Shield, Scale Armor",
+        abilities: [
+          { name: "Armored", desc: "Starts with 15/15 damage shields. Resistances apply over shields." },
+          { name: "Anchoring Howl", desc: "Free action, 2 stamina (1/round upkeep): 10ft cloak — instantly Guards all allies inside." },
+          { name: "Barbed Counter", desc: "Procs 5ft cloak (Str d10) when shields drop or on Counter." },
+          { name: "Spiked Armor", desc: "5ft physical cloak on movement finish or when attacked." },
+          { name: "Drilled Technique", desc: "+4 Accuracy, +2 Primary Damage on counters (8 stamina). Recovers 10 damage shields." },
+        ],
+        equipment: "Broadsword (1d8 Versatile), Heater Shield (+2 Parry), Scale Armor.",
+        tactics: "Protects weak allies. Guard Stance + Anchoring Howl. Always Blocks. Counters with Drilled Technique and Spiked Armor.",
+      },
+      {
+        name: "Fighter",
+        level: "Tier 2 (lv 3)",
+        hp: 35, stamina: 35, mana: 0,
+        str: "d8", dex: "d12+2", min: "d4", wil: "d4", vig: "d4",
+        parry: "10 (13 Dodging)", armor: "+1", ward: null,
+        damage: "2d8-3d8+6 (with Overwhelming Strike)",
+        accuracy: "1d12+7",
+        critical: "+2 with Knife",
+        speed: "6",
+        loot: "Longsword, Throwing Knives, Gambeson",
+        abilities: [
+          { name: "Cleave", desc: "2 Actions: Targeted AoE." },
+          { name: "Overwhelming Strike", desc: "1 Action: Next melee attack gets extra Primary die + +2 Damage and Accuracy." },
+          { name: "Lunge", desc: "2 Actions: Move double speed and attack." },
+          { name: "Precise Blow", desc: "+4 Accuracy, +4 Primary Damage (Precision + Practiced Fencing, 8 stamina)." },
+        ],
+        equipment: "Longsword (1d8, +1 Accuracy), Throwing Knives (1d4, range 6), Gambeson.",
+        tactics: "Charges to Cleave or hunts unarmored targets. Uses Overwhelming Strike + Precise Blow combo. Always Dodges.",
+      },
+      {
+        name: "Arbalist",
+        level: "Tier 2 (lv 3)",
+        hp: 35, stamina: 35, mana: 0,
+        str: "d8", dex: "d12+3", min: "d4", wil: "d4", vig: "d4",
+        parry: "10 (12 Dodging)", armor: "0", ward: null,
+        damage: "2d8 (+2 Hunter's Discharge, +1 Heavy Crossbow)",
+        accuracy: "1d12+3 (+2 Take Aim, +2 Hunter's Discharge, +2 Hunter's Mark)",
+        speed: "6",
+        loot: "Heavy Crossbow, Shortsword",
+        abilities: [
+          { name: "Archer's Shot", desc: "+4 Accuracy, +2 Primary Damage (Hunter's Discharge + Take Aim, 8 stamina). Also uses Hunter's Mark (+2 Accuracy) on a target." },
+        ],
+        equipment: "Heavy Crossbow (2d8, range 12), Shortsword (1d6), Padded Clothes.",
+        tactics: "Holds position. Marks then shoots priority targets with Archer's Shot. Always Dodges.",
+      },
+      {
+        name: "Bruiser",
+        level: "Tier 2 (lv 3)",
+        hp: 35, stamina: 35, mana: 0,
+        str: "d8", dex: "d12+2", min: "d4", wil: "d4", vig: "d4",
+        parry: "9 (11 Dodging)", armor: "0", ward: null,
+        damage: "1d8+1d8/1d4 (+2 Precision Strikes)",
+        accuracy: "1d12+2 (+2 Precision, +2 Quick Jabs)",
+        speed: "6",
+        loot: "Caestus, Throwing Knives",
+        abilities: [
+          { name: "Fist Fighter", desc: "Fists Finesse (1d8). Dual Strike: 2 Attacks with same MAP (2 Actions). CC can use Dex instead of Str." },
+          { name: "Grab Action", desc: "Single attack: Str vs Vig to grapple (no damage needed)." },
+          { name: "Quick Blows", desc: "+4 Accuracy, +2 Primary Damage (Quick Jabs + Precision, 8 stamina)." },
+        ],
+        equipment: "Caestus (1d8 Fists), Throwing Knives (1d4, range 6).",
+        tactics: "Hits out-of-position units. Grabs Warriors away from their Guards. Always Dodges.",
+      },
+      {
+        name: "Rogue",
+        level: "Tier 2 (lv 3)",
+        hp: 35, stamina: 35, mana: 0,
+        str: "d12", dex: "d12", min: "d4", wil: "d4", vig: "d4",
+        parry: "9 (11 Dodging)", armor: "0", ward: null,
+        damage: "1d12+1d4 (+2 Precision Strikes)",
+        accuracy: "1d12 (+2 Precision, +2 Take Aim)",
+        critical: "+2",
+        speed: "6",
+        loot: "Throwing Knives, Dagger, Padded Clothes",
+        abilities: [
+          { name: "Fan of Blades", desc: "2 Actions: Throw weapon without hitting Parry at half range. Counts as 2 attacks for MAP. No enhancers." },
+          { name: "Quick Blades", desc: "Fan of Blades on crowds, or Dual Strike with +4 Accuracy, +2 Damage on flanked targets (8 stamina)." },
+          { name: "Dual Strike", desc: "2 Actions: 2 Attacks with same MAP." },
+          { name: "Lethality", desc: "2 stacks of Bleed per hit, 2 on crit." },
+          { name: "Poison Resin", desc: "Interact Action: 4 stacks Poison on a weapon, applied on HP damage." },
+        ],
+        equipment: "Knife (1d4, range 6), Dagger, Padded Clothes.",
+        tactics: "Fan of Blades on clumps. Dual Strike on isolated flanked units. Applies Poison with Resin. Always Dodges.",
+      },
+      {
+        name: "Arcanist",
+        level: "Tier 2 (lv 3)",
+        hp: 30, stamina: 10, mana: 40,
+        str: "d4", dex: "d4", min: "d12+2", wil: "d8", vig: "d4",
+        parry: "8 (9 Staff, 11 Dodging)", armor: "0", ward: "+2",
+        damage: "1d12+2+1d4/1d4 (spells)",
+        accuracy: "1d12+2",
+        spellRange: "10",
+        speed: "6",
+        loot: "1 Staff, Padded Clothes",
+        abilities: [
+          { name: "Mana Abjuration", desc: "Half Mind = Parry. Mana can be used to Dodge/Block." },
+          { name: "Fire Spark", desc: "4 mana, 2 Actions: 1d4 fire + Mind, 10ft radius. Applies 1 Searing." },
+          { name: "Summon Fragment Phantom", desc: "10 HP, 6 Parry, 30ft move, 1d6+5 dmg. Bleed on HP hit; Poison if bleeding." },
+          { name: "Thaumic Enhancement", desc: "Rune enchantment on ally's weapon until end of combat." },
+          { name: "Dark Erosion", desc: "WIL vs WIL: Rend + 2 Poison stacks on fail." },
+          { name: "Ghastly Trickery", desc: "WIL vs WIL: Root on fail." },
+        ],
+        equipment: "Staff, Padded Clothes.",
+        tactics: "Versatile caster. Supports with buffs and summons. Offensive when needed. Always Dodges.",
+      },
+      {
+        name: "Acolyte",
+        level: "Tier 2 (lv 1–3)",
+        hp: 30, stamina: 10, mana: 40,
+        str: "d4", dex: "d4", min: "d12", wil: "d12", vig: "d4",
+        parry: "7 (8 Staff, 10 Dodging)", armor: "0", ward: "+3",
+        damage: "1d12+2d6/1d4 (spells)",
+        accuracy: "1d12 (+2 Homing Spell)",
+        spellRange: "10",
+        speed: "6",
+        loot: "1 Staff, Padded Clothes",
+        abilities: [
+          { name: "Mana Abjuration", desc: "Half Mind = Parry. Mana can be used to Dodge/Block." },
+          { name: "Angelic Wingbeat", desc: "4 mana, 2 Actions: 1d4 holy + Mind, 10ft radius. Damage converts to damage shields for allies." },
+          { name: "Divine Fortification", desc: "10 damage shields or WIL die of healing to ally in range." },
+          { name: "Aura", desc: "4 mana: 2d6 + Mind Holy damage, Homing (+2 Accuracy). Applies 2 Searing on HP damage." },
+        ],
+        equipment: "Staff, Padded Clothes.",
+        tactics: "Holy support caster. Shields and heals allies. Offensively uses Aura. Always Dodges.",
+      },
+    ],
+    elites: [],
+    bosses: [],
+  },
+};
+
+const categoryColors = {
+  mooks: { bg: "rgba(255,255,255,0.05)", border: "rgba(255,255,255,0.15)", label: "MOOK" },
+  elites: { bg: "rgba(255,200,50,0.07)", border: "rgba(255,200,50,0.3)", label: "ELITE" },
+  bosses: { bg: "rgba(255,80,80,0.07)", border: "rgba(255,80,80,0.35)", label: "BOSS" },
+};
+
+function StatBar({ label, value, max = 25 }) {
+  const num = parseInt(value) || 0;
+  const pct = Math.min((num / max) * 100, 100);
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+      <span style={{ width: 70, fontSize: 11, color: "#aaa", fontFamily: "monospace", textAlign: "right" }}>{label}</span>
+      <div style={{ flex: 1, height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 3, overflow: "hidden" }}>
+        <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg, #4a9eff, #7bc8ff)", borderRadius: 3, transition: "width 0.4s ease" }} />
+      </div>
+      <span style={{ width: 30, fontSize: 11, color: "#ccc", fontFamily: "monospace" }}>{value}</span>
+    </div>
+  );
+}
+
+function AbilityTag({ ability }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ marginBottom: 6 }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          background: open ? "rgba(74,158,255,0.15)" : "rgba(255,255,255,0.06)",
+          border: `1px solid ${open ? "rgba(74,158,255,0.4)" : "rgba(255,255,255,0.12)"}`,
+          borderRadius: 6,
+          padding: "5px 10px",
+          color: open ? "#7bc8ff" : "#ccc",
+          cursor: "pointer",
+          fontSize: 12,
+          fontFamily: "'Crimson Text', Georgia, serif",
+          fontWeight: 600,
+          width: "100%",
+          textAlign: "left",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          transition: "all 0.2s",
+        }}
+      >
+        <span>{ability.name}</span>
+        <span style={{ fontSize: 10, opacity: 0.7 }}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div style={{
+          background: "rgba(74,158,255,0.05)",
+          border: "1px solid rgba(74,158,255,0.2)",
+          borderTop: "none",
+          borderRadius: "0 0 6px 6px",
+          padding: "8px 12px",
+          fontSize: 12,
+          color: "#adc8e8",
+          lineHeight: 1.5,
+          fontFamily: "'Crimson Text', Georgia, serif",
+        }}>
+          {ability.desc}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EnemyCard({ enemy, accentColor, category }) {
+  const [expanded, setExpanded] = useState(false);
+  const cat = categoryColors[category];
+
+  return (
+    <div style={{
+      background: cat.bg,
+      border: `1px solid ${cat.border}`,
+      borderRadius: 12,
+      overflow: "hidden",
+      transition: "box-shadow 0.2s",
+      boxShadow: expanded ? `0 0 20px ${cat.border}` : "none",
+    }}>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          width: "100%",
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          padding: "14px 18px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          textAlign: "left",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{
+            background: cat.border,
+            color: "#fff",
+            fontSize: 9,
+            fontFamily: "monospace",
+            fontWeight: 700,
+            letterSpacing: 2,
+            padding: "2px 7px",
+            borderRadius: 3,
+            textTransform: "uppercase",
+          }}>{cat.label}</span>
+          <div>
+            <div style={{ color: "#f0e8d8", fontSize: 16, fontFamily: "'Crimson Text', Georgia, serif", fontWeight: 700 }}>
+              {enemy.name}
+            </div>
+            <div style={{ color: "#888", fontSize: 11, fontFamily: "monospace", marginTop: 1 }}>
+              {enemy.level}
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#aaa" }}>
+            <span>❤️ {enemy.hp}</span>
+            <span>⚡ {enemy.stamina}</span>
+            {enemy.mana > 0 && <span>🔮 {enemy.mana}</span>}
+          </div>
+          <span style={{ color: "#555", fontSize: 14 }}>{expanded ? "▲" : "▼"}</span>
+        </div>
+      </button>
+
+      {expanded && (
+        <div style={{ padding: "0 18px 18px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ paddingTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+            {/* Left column */}
+            <div>
+              <div style={{ fontSize: 11, color: "#666", fontFamily: "monospace", letterSpacing: 2, marginBottom: 10, textTransform: "uppercase" }}>Attributes</div>
+              <StatBar label="STR" value={enemy.str} max={20} />
+              <StatBar label="DEX" value={enemy.dex} max={20} />
+              <StatBar label="MIN" value={enemy.min} max={20} />
+              <StatBar label="WIL" value={enemy.wil} max={20} />
+              <StatBar label="VIG" value={enemy.vig} max={20} />
+
+              <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {[
+                  ["Parry", enemy.parry],
+                  ["Armor", enemy.armor],
+                  enemy.ward ? ["Ward", enemy.ward] : null,
+                  ["Speed", `${enemy.speed} sp`],
+                  enemy.spellRange ? ["Spell Range", enemy.spellRange] : null,
+                  enemy.critical ? ["Crit Bonus", enemy.critical] : null,
+                ].filter(Boolean).map(([k, v]) => (
+                  <div key={k} style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: 6,
+                    padding: "6px 10px",
+                  }}>
+                    <div style={{ fontSize: 9, color: "#666", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: 1 }}>{k}</div>
+                    <div style={{ fontSize: 13, color: "#e0d8c8", fontFamily: "'Crimson Text', Georgia, serif", fontWeight: 600, marginTop: 2 }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontSize: 11, color: "#666", fontFamily: "monospace", letterSpacing: 2, marginBottom: 8, textTransform: "uppercase" }}>Combat Stats</div>
+                {[
+                  ["Damage", enemy.damage],
+                  ["Accuracy", enemy.accuracy],
+                ].map(([k, v]) => (
+                  <div key={k} style={{ marginBottom: 6 }}>
+                    <span style={{ fontSize: 10, color: "#666", fontFamily: "monospace", textTransform: "uppercase" }}>{k}: </span>
+                    <span style={{ fontSize: 12, color: "#c8b8a0", fontFamily: "'Crimson Text', Georgia, serif" }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontSize: 11, color: "#666", fontFamily: "monospace", letterSpacing: 2, marginBottom: 6, textTransform: "uppercase" }}>Equipment</div>
+                <div style={{ fontSize: 12, color: "#a8a090", fontFamily: "'Crimson Text', Georgia, serif", lineHeight: 1.6 }}>{enemy.equipment}</div>
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <div style={{ fontSize: 11, color: "#666", fontFamily: "monospace", letterSpacing: 2, marginBottom: 6, textTransform: "uppercase" }}>Loot</div>
+                <div style={{ fontSize: 12, color: "#a8c880", fontFamily: "'Crimson Text', Georgia, serif" }}>{enemy.loot}</div>
+              </div>
+            </div>
+
+            {/* Right column */}
+            <div>
+              <div style={{ fontSize: 11, color: "#666", fontFamily: "monospace", letterSpacing: 2, marginBottom: 10, textTransform: "uppercase" }}>Abilities</div>
+              {enemy.abilities.map((ab, i) => <AbilityTag key={i} ability={ab} />)}
+
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontSize: 11, color: "#666", fontFamily: "monospace", letterSpacing: 2, marginBottom: 6, textTransform: "uppercase" }}>Tactics</div>
+                <div style={{
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  borderRadius: 8,
+                  padding: "10px 12px",
+                  fontSize: 12,
+                  color: "#b0a898",
+                  fontFamily: "'Crimson Text', Georgia, serif",
+                  lineHeight: 1.7,
+                  fontStyle: "italic",
+                }}>
+                  {enemy.tactics}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function App() {
+  const tiers = Object.keys(enemies);
+  const [selectedTier, setSelectedTier] = useState("Tier 0");
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+
+  const tierData = enemies[selectedTier];
+  const accentColor = tierData.accent;
+
+  const allEnemiesInTier = [
+    ...tierData.mooks.map(e => ({ ...e, category: "mooks" })),
+    ...tierData.elites.map(e => ({ ...e, category: "elites" })),
+    ...tierData.bosses.map(e => ({ ...e, category: "bosses" })),
+  ];
+
+  const filtered = allEnemiesInTier.filter(e => {
+    const matchSearch = e.name.toLowerCase().includes(search.toLowerCase());
+    const matchCat = categoryFilter === "all" || e.category === categoryFilter;
+    return matchSearch && matchCat;
+  });
+
+  return (
+    <div style={{
+      minHeight: "100vh",
+      background: "#0d0f14",
+      color: "#e0d8c8",
+      fontFamily: "'Crimson Text', Georgia, serif",
+    }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Cinzel:wght@400;600;700&display=swap');
+        * { box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0d0f14; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+      `}</style>
+
+      {/* Header */}
+      <div style={{
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        padding: "28px 40px 22px",
+        background: "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)",
+      }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ fontSize: 11, fontFamily: "monospace", letterSpacing: 4, color: "#555", textTransform: "uppercase", marginBottom: 6 }}>TSR Combat System</div>
+          <h1 style={{
+            fontFamily: "'Cinzel', serif",
+            fontSize: 34,
+            fontWeight: 700,
+            color: "#f0e8d8",
+            margin: 0,
+            letterSpacing: 1,
+          }}>Enemies 5.0</h1>
+          <p style={{ color: "#666", fontSize: 14, margin: "6px 0 0", fontFamily: "monospace" }}>
+            Enemy Index — {allEnemiesInTier.length} entries in {tierData.label}
+          </p>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 40px" }}>
+        {/* Tier Selector */}
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontSize: 10, fontFamily: "monospace", letterSpacing: 3, color: "#555", textTransform: "uppercase", marginBottom: 12 }}>Select Tier</div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {tiers.map(tier => {
+              const t = enemies[tier];
+              const isActive = selectedTier === tier;
+              return (
+                <button
+                  key={tier}
+                  onClick={() => { setSelectedTier(tier); setSearch(""); setCategoryFilter("all"); }}
+                  style={{
+                    background: isActive ? `${t.accent}22` : "rgba(255,255,255,0.03)",
+                    border: `1px solid ${isActive ? t.accent : "rgba(255,255,255,0.1)"}`,
+                    borderRadius: 8,
+                    padding: "10px 20px",
+                    color: isActive ? t.accent : "#888",
+                    cursor: "pointer",
+                    fontFamily: "'Cinzel', serif",
+                    fontSize: 13,
+                    fontWeight: isActive ? 600 : 400,
+                    transition: "all 0.2s",
+                    boxShadow: isActive ? `0 0 16px ${t.accent}33` : "none",
+                  }}
+                >
+                  <div>{tier}</div>
+                  <div style={{ fontSize: 10, fontFamily: "monospace", color: isActive ? t.accent : "#555", letterSpacing: 1, marginTop: 3 }}>
+                    {[...enemies[tier].mooks, ...enemies[tier].elites, ...enemies[tier].bosses].length} entries
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Tier Description */}
+        <div style={{
+          background: `${accentColor}11`,
+          border: `1px solid ${accentColor}33`,
+          borderRadius: 8,
+          padding: "12px 18px",
+          marginBottom: 24,
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+        }}>
+          <div style={{ width: 3, height: 36, background: accentColor, borderRadius: 2, flexShrink: 0 }} />
+          <div>
+            <div style={{ fontFamily: "'Cinzel', serif", fontSize: 16, color: accentColor, fontWeight: 600 }}>{tierData.label}</div>
+            <div style={{ fontSize: 12, color: "#888", fontFamily: "monospace", marginTop: 2 }}>
+              {tierData.mooks.length} Mooks · {tierData.elites.length} Elites · {tierData.bosses.length} Bosses
+              {tierData.elites.length === 0 && tierData.bosses.length === 0 ? " — Elites & Bosses not yet populated." : ""}
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
+          <input
+            placeholder="Search enemies..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{
+              flex: 1,
+              minWidth: 200,
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 8,
+              padding: "9px 14px",
+              color: "#e0d8c8",
+              fontSize: 13,
+              fontFamily: "'Crimson Text', Georgia, serif",
+              outline: "none",
+            }}
+          />
+          {["all", "mooks", "elites", "bosses"].map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              style={{
+                background: categoryFilter === cat ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.03)",
+                border: `1px solid ${categoryFilter === cat ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.08)"}`,
+                borderRadius: 8,
+                padding: "9px 16px",
+                color: categoryFilter === cat ? "#f0e8d8" : "#666",
+                cursor: "pointer",
+                fontSize: 12,
+                fontFamily: "monospace",
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                transition: "all 0.15s",
+              }}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Enemy Cards */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {filtered.length === 0 ? (
+            <div style={{ textAlign: "center", color: "#555", padding: 60, fontFamily: "monospace", fontSize: 13 }}>
+              No enemies found.
+            </div>
+          ) : (
+            filtered.map((enemy, i) => (
+              <EnemyCard key={`${enemy.name}-${i}`} enemy={enemy} accentColor={accentColor} category={enemy.category} />
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
