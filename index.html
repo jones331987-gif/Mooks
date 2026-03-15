@@ -233,7 +233,7 @@
     }
 
     // ─── ENCOUNTER BUILDER TAB ────────────────────────────────────────────────
-    function EncounterBuilder({ encounter, setEncounter }) {
+    function EncounterBuilder({ encounter, setEncounter, setShowSummary }) {
       const [search, setSearch] = useState("");
       const [tierFilter, setTierFilter] = useState("All");
       const [catFilter, setCatFilter] = useState("all");
@@ -411,7 +411,9 @@
 
             {encounter.length > 0 && (
               <div style={{ display:"flex", gap:8 }}>
-                <button onClick={() => { if(confirm("Clear encounter?")) setEncounter([]); }} style={{ flex:1, background:"rgba(255,50,50,0.07)", border:"1px solid rgba(255,50,50,0.2)", borderRadius:7, padding:"8px 14px", color:"rgba(255,100,100,0.7)", cursor:"pointer", fontSize:12, fontFamily:"monospace", letterSpacing:1 }}>CLEAR ENCOUNTER</button>
+                <button onClick={() => setShowSummary(true)} style={{flex:1,background:"rgba(196,163,90,0.08)",border:"1px solid rgba(196,163,90,0.25)",borderRadius:7,padding:"8px 14px",color:"rgba(196,163,90,0.9)",cursor:"pointer",fontSize:12,fontFamily:"monospace",letterSpacing:1}}>VIEW SUMMARY</button>
+                <button onClick={() => { if(confirm("Clear encounter?")) setEncounter([]); }}
+                style={{ flex:1, background:"rgba(255,50,50,0.07)", border:"1px solid rgba(255,50,50,0.2)", borderRadius:7, padding:"8px 14px", color:"rgba(255,100,100,0.7)", cursor:"pointer", fontSize:12, fontFamily:"monospace", letterSpacing:1 }}>CLEAR</button>
                 <button onClick={() => {
                   const lines = ["ENCOUNTER ROSTER","=".repeat(40),"", ...encounter.map(e => `${e.count}× ${e.name} (${e.level}) — HP: ${e.hp}×${e.count}=${e.hp*e.count}`), "","TOTAL UNITS: "+totalUnits,"TOTAL HP: "+totalHP];
                   navigator.clipboard.writeText(lines.join("\n")).then(()=>alert("Copied to clipboard!"));
@@ -482,11 +484,174 @@
       );
     }
 
-    // ─── ROOT APP ─────────────────────────────────────────────────────────────
+    
+    // --- ENCOUNTER SUMMARY ---------------------------------------------------
+    function EncounterSummary({ encounter, onBack }) {
+      const [selected, setSelected] = React.useState(null);
+
+      const totalUnits = encounter.reduce((s,e) => s + e.count, 0);
+      const totalHP    = encounter.reduce((s,e) => s + e.hp * e.count, 0);
+      const totalStam  = encounter.reduce((s,e) => s + e.stamina * e.count, 0);
+      const totalMana  = encounter.reduce((s,e) => s + e.mana * e.count, 0);
+
+      const byTier = {};
+      encounter.forEach(e => {
+        if (!byTier[e.tier]) byTier[e.tier] = [];
+        byTier[e.tier].push(e);
+      });
+
+      const sel = selected;
+      const selCat = sel ? (CAT_STYLE[sel.category] || CAT_STYLE.mooks) : null;
+
+      return (
+        <div>
+          <button onClick={onBack} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:8,padding:"8px 16px",color:"#888",cursor:"pointer",fontFamily:"monospace",fontSize:12,letterSpacing:1,marginBottom:24,display:"flex",alignItems:"center",gap:8}}>
+            &larr; BACK TO BUILDER
+          </button>
+
+          {encounter.length === 0 ? (
+            <div style={{textAlign:"center",padding:"80px 0",color:"#333",fontFamily:"monospace",fontSize:13}}>
+              <div style={{fontSize:36,marginBottom:12,opacity:0.3}}>&#9876;</div>
+              Your encounter is empty. Add enemies first.
+            </div>
+          ) : (
+            <div style={{display:"grid",gridTemplateColumns:"320px 1fr",gap:28,alignItems:"start"}}>
+
+              <div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:20}}>
+                  {[["Total Units",totalUnits],["Total HP",totalHP],["Total Stamina",totalStam],["Total Mana",totalMana]].map(([k,v]) => (
+                    <div key={k} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,padding:"10px 14px"}}>
+                      <div style={{fontSize:9,color:"#555",fontFamily:"monospace",textTransform:"uppercase",letterSpacing:1}}>{k}</div>
+                      <div style={{fontSize:22,color:"#e0d8c8",fontFamily:"'Cinzel',serif",fontWeight:600,marginTop:3}}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {Object.entries(byTier).map(([tier, items]) => {
+                  const td = ENEMIES[tier];
+                  return (
+                    <div key={tier} style={{marginBottom:16}}>
+                      <div style={{fontSize:10,fontFamily:"monospace",letterSpacing:3,color:td.accent,textTransform:"uppercase",marginBottom:8,paddingBottom:5,borderBottom:"1px solid "+td.accent+"33"}}>{tier}</div>
+                      <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                        {items.map((item, idx) => {
+                          const c = CAT_STYLE[item.category] || CAT_STYLE.mooks;
+                          const isSel = sel && sel.name===item.name && sel.tier===item.tier;
+                          return (
+                            <button key={idx} onClick={() => setSelected(isSel ? null : item)}
+                              style={{background:isSel?"rgba(74,158,255,0.08)":"rgba(255,255,255,0.03)",border:"1px solid "+(isSel?c.border:"rgba(255,255,255,0.08)"),borderRadius:8,padding:"9px 12px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:10,transition:"all 0.15s",boxShadow:isSel?"0 0 12px "+c.border:"none"}}>
+                              <span style={{background:c.pill,color:"#fff",fontSize:8,fontFamily:"monospace",fontWeight:700,letterSpacing:2,padding:"1px 5px",borderRadius:3,textTransform:"uppercase",flexShrink:0}}>{c.label}</span>
+                              <div style={{flex:1,minWidth:0}}>
+                                <div style={{color:"#f0e8d8",fontSize:13,fontFamily:"'Crimson Text',Georgia,serif",fontWeight:700}}>{item.name}</div>
+                                <div style={{color:"#666",fontSize:10,fontFamily:"monospace"}}>x{item.count} &middot; HP:{item.hp} SP:{item.stamina}{item.mana>0?" MP:"+item.mana:""}</div>
+                              </div>
+                              <span style={{color:isSel?"#7bc8ff":"#333",fontSize:11,flexShrink:0}}>{isSel ? "<<" : ">>"}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div>
+                {!sel ? (
+                  <div style={{border:"1px dashed rgba(255,255,255,0.07)",borderRadius:12,padding:"80px 40px",textAlign:"center",color:"#2a2d35"}}>
+                    <div style={{fontSize:36,marginBottom:12,opacity:0.5}}>&#9668;</div>
+                    <div style={{fontFamily:"monospace",fontSize:12,letterSpacing:2}}>SELECT AN ENEMY TO INSPECT</div>
+                    <div style={{fontFamily:"monospace",fontSize:10,color:"#222",marginTop:8}}>Click any entry on the left</div>
+                  </div>
+                ) : (
+                  <div style={{background:selCat.bg,border:"1px solid "+selCat.border,borderRadius:14,overflow:"hidden",boxShadow:"0 0 30px "+selCat.border}}>
+                    <div style={{padding:"20px 24px 16px",borderBottom:"1px solid "+selCat.border,background:"linear-gradient(135deg,rgba(0,0,0,0.3),rgba(0,0,0,0.1))"}}>
+                      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16}}>
+                        <div>
+                          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+                            <span style={{background:selCat.pill,color:"#fff",fontSize:9,fontFamily:"monospace",fontWeight:700,letterSpacing:2,padding:"2px 7px",borderRadius:3,textTransform:"uppercase"}}>{selCat.label}</span>
+                            <span style={{color:"#555",fontSize:11,fontFamily:"monospace"}}>{sel.tier}</span>
+                          </div>
+                          <h2 style={{fontFamily:"'Cinzel',serif",fontSize:26,fontWeight:700,color:"#f0e8d8",margin:"0 0 4px",letterSpacing:1}}>{sel.name}</h2>
+                          <div style={{color:"#666",fontSize:12,fontFamily:"monospace"}}>{sel.level}</div>
+                        </div>
+                        <div style={{textAlign:"right",background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:10,padding:"12px 18px",flexShrink:0}}>
+                          <div style={{fontSize:9,color:"#555",fontFamily:"monospace",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>In Encounter</div>
+                          <div style={{fontSize:28,color:"#e0d8c8",fontFamily:"'Cinzel',serif",fontWeight:700}}>x{sel.count}</div>
+                          <div style={{fontSize:11,color:"#666",fontFamily:"monospace",marginTop:2}}>Total HP: {sel.hp*sel.count}</div>
+                        </div>
+                      </div>
+                      <div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>
+                        {[["HP","&#10084;&#65039;",sel.hp],["Stamina","&#9889;",sel.stamina],sel.mana>0?["Mana","&#128302;",sel.mana]:null,["Parry","&#128302;",sel.parry],["Armor","&#9876;",sel.armor],sel.ward?["Ward","&#10024;",sel.ward]:null].filter(Boolean).map(([k,icon,v])=>(
+                          <div key={k} style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:7,padding:"7px 11px",textAlign:"center",flex:1,minWidth:56}}>
+                            <div style={{fontSize:11,color:"#666",fontFamily:"monospace",textTransform:"uppercase",letterSpacing:1}}>{k}</div>
+                            <div style={{fontSize:17,color:"#e0d8c8",fontFamily:"'Cinzel',serif",fontWeight:600,marginTop:3}}>{v}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{padding:"20px 24px"}}>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:22}}>
+                        <div>
+                          <div style={{fontSize:10,color:"#555",fontFamily:"monospace",letterSpacing:2,marginBottom:10,textTransform:"uppercase"}}>Attributes</div>
+                          {[["STR",sel.str],["DEX",sel.dex],["MIN",sel.min],["WIL",sel.wil],["VIG",sel.vig]].map(([k,v])=>{
+                            const num=parseInt(v)||0; const pct=Math.min((num/20)*100,100);
+                            return (
+                              <div key={k} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
+                                <span style={{width:36,fontSize:11,color:"#aaa",fontFamily:"monospace",textAlign:"right"}}>{k}</span>
+                                <div style={{flex:1,height:7,background:"rgba(255,255,255,0.06)",borderRadius:4,overflow:"hidden"}}>
+                                  <div style={{width:pct+"%",height:"100%",background:"linear-gradient(90deg,#4a9eff,#7bc8ff)",borderRadius:4}}/>
+                                </div>
+                                <span style={{width:40,fontSize:11,color:"#ccc",fontFamily:"monospace"}}>{v}</span>
+                              </div>
+                            );
+                          })}
+
+                          <div style={{marginTop:16}}>
+                            <div style={{fontSize:10,color:"#555",fontFamily:"monospace",letterSpacing:2,marginBottom:8,textTransform:"uppercase"}}>Combat Stats</div>
+                            {[["Damage",sel.damage],["Accuracy",sel.accuracy],sel.spellRange?["Spell Range",sel.spellRange+" spaces"]:null,sel.critical?["Crit Bonus",sel.critical]:null,["Speed",sel.speed+" spaces"]].filter(Boolean).map(([k,v])=>(
+                              <div key={k} style={{marginBottom:7,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:6,padding:"6px 10px"}}>
+                                <div style={{fontSize:9,color:"#555",fontFamily:"monospace",textTransform:"uppercase",letterSpacing:1}}>{k}</div>
+                                <div style={{fontSize:13,color:"#c8b8a0",fontFamily:"'Crimson Text',Georgia,serif",marginTop:2}}>{v}</div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div style={{marginTop:16}}>
+                            <div style={{fontSize:10,color:"#555",fontFamily:"monospace",letterSpacing:2,marginBottom:6,textTransform:"uppercase"}}>Equipment</div>
+                            <div style={{fontSize:12,color:"#a8a090",fontFamily:"'Crimson Text',Georgia,serif",lineHeight:1.7,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:7,padding:"9px 12px"}}>{sel.equipment}</div>
+                          </div>
+
+                          <div style={{marginTop:12}}>
+                            <div style={{fontSize:10,color:"#555",fontFamily:"monospace",letterSpacing:2,marginBottom:6,textTransform:"uppercase"}}>Loot</div>
+                            <div style={{fontSize:12,color:"#a8c880",fontFamily:"'Crimson Text',Georgia,serif",background:"rgba(168,200,128,0.05)",border:"1px solid rgba(168,200,128,0.15)",borderRadius:7,padding:"8px 12px"}}>{sel.loot}</div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div style={{fontSize:10,color:"#555",fontFamily:"monospace",letterSpacing:2,marginBottom:10,textTransform:"uppercase"}}>Abilities</div>
+                          {sel.abilities.map((ab,i) => <AbilityTag key={i} ability={ab} />)}
+                          <div style={{marginTop:16}}>
+                            <div style={{fontSize:10,color:"#555",fontFamily:"monospace",letterSpacing:2,marginBottom:6,textTransform:"uppercase"}}>Tactics</div>
+                            <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:8,padding:"12px 14px",fontSize:13,color:"#b0a898",fontFamily:"'Crimson Text',Georgia,serif",lineHeight:1.8,fontStyle:"italic"}}>{sel.tactics}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+// ─── ROOT APP ─────────────────────────────────────────────────────────────
     function App() {
       const { useState } = React;
       const [activeTab, setActiveTab] = useState("index");
       const [encounter, setEncounter] = useState([]);
+      const [showSummary, setShowSummary] = useState(false);
 
       const tabs = [
         { id:"index", label:"Enemy Index", icon:"📖" },
@@ -509,13 +674,18 @@
                     {tab.badge ? <span style={{ background:"#C4A35A", color:"#0d0f14", fontSize:10, fontFamily:"monospace", fontWeight:700, borderRadius:10, padding:"1px 7px", marginLeft:2 }}>{tab.badge}</span> : null}
                   </button>
                 ))}
+              {activeTab === "encounter" && encounter.length > 0 && (
+                <button onClick={() => setShowSummary(s => !s)} style={{marginLeft:"auto",background:showSummary?"rgba(196,163,90,0.12)":"rgba(255,255,255,0.04)",border:"1px solid "+(showSummary?"rgba(196,163,90,0.45)":"rgba(255,255,255,0.1)"),borderRadius:"8px 8px 0 0",padding:"10px 18px",color:showSummary?"#C4A35A":"#777",cursor:"pointer",fontSize:12,fontFamily:"'Cinzel',serif",display:"flex",alignItems:"center",gap:7,transition:"all 0.2s"}}>
+                  <span>&#128203;</span><span>{showSummary ? "Builder" : "Summary"}</span>
+                </button>
+              )}
               </div>
             </div>
           </div>
 
           {/* Content */}
           <div style={{ maxWidth:1200, margin:"0 auto", padding:"28px 40px" }}>
-            {activeTab === "index" ? <EnemyIndex /> : <EncounterBuilder encounter={encounter} setEncounter={setEncounter} />}
+            {activeTab === "index" ? <EnemyIndex /> : (showSummary ? <EncounterSummary encounter={encounter} onBack={() => setShowSummary(false)} /> : <EncounterBuilder encounter={encounter} setEncounter={setEncounter} setShowSummary={setShowSummary} />)}
           </div>
         </div>
       );
